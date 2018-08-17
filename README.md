@@ -17,7 +17,6 @@ pip install majormode-perseus-microrm
 ``` python
 import uuid
 
-from majormode.perseus.model.geolocation import GeoPoint
 from majormode.perseus.utils import cast
 from majormode.perseus.utils.rdbms import RdbmsConnection
 
@@ -59,4 +58,8 @@ with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
 
     for place in places:
         print place.place_id, place.longitude, place.latitude
+
+
+,
+        auto_commit=False
 ```
