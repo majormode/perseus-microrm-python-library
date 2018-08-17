@@ -58,8 +58,4 @@ with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
 
     for place in places:
         print place.place_id, place.longitude, place.latitude
-
-
-,
-        auto_commit=False
 ```
