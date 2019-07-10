@@ -36,7 +36,8 @@ PLACE_IDS = [
     uuid.UUID('9025d1c8-a1ec-11e8-9e29-0007cb040bcc')
 ]
 
-with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
+with RdbmsConnection.acquire_connection(
+        RDBMS_CONNECTION_PROPERTIES,
         auto_commit=False,
         connection=None) as connection:
     cursor = connection.execute(
