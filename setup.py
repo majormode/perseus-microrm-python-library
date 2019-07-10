@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2013 Majormode.
+# Copyright (C) 2019 Majormode.  All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -16,87 +13,46 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY,# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 # IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 # CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import os
-import re
+
+import pipfile
 import setuptools
 
-
-EOL_UNIX = '\n'
-EOL_WINDOWS = '\r\n'
-EOL_MAC = '\r'
-
-
-def get_author_email():
-    """
-    Return package email as listed in `__email__` in `init.py`.
-    """
-    return re.search("^__email__ = ['\"]([^'\"]+)['\"]",
-             read_package_init_file(), re.MULTILINE).group(1)
+__author__ = "Daniel CAUNE"
+__copyright__ = "Copyright (C) 2019, Majormode"
+__credits__ = ["Daniel CAUNE"]
+__email__ = "daniel.caune@gmail.com"
+__license__ = "MIT"
+__maintainer__ = "Daniel CAUNE"
+__status__ = "Production"
+__version__ = '1.1.0'
 
 
-def get_author_name():
-    """
-    Return package author as listed in `__author__` in `init.py`.
-    """
-    return re.search("^__author__ = ['\"]([^'\"]+)['\"]",
-            read_package_init_file(), re.MULTILINE).group(1)
+# Base directory where this file is located.
+BASE_DIR = os.path.dirname(__file__)
 
 
 def get_requirements():
-    """
-    Return the list of Python libraries that this package depends on.
-
-
-    @return: a list of the required Python libraries.
-    """
-    return read_file('requirements.txt') \
-        .replace(EOL_WINDOWS, EOL_UNIX) \
-        .replace(EOL_MAC, EOL_UNIX) \
-        .split(EOL_UNIX)
-
-
-def get_version():
-    """
-    Return package version as listed in `__version__` in `init.py`.
-    """
-    return re.search("^__version__ = ['\"]([^'\"]+)['\"]",
-            read_package_init_file(), re.MULTILINE).group(1)
+    pip_file = pipfile.load()
+    return os.linesep.join([
+        package_name
+        for package_name, package_version in pip_file.data['default'].items()])
 
 
 def read_file(file_path_name):
-    """
-    Read the content of the specified file.
-
-
-    @param file_path_name: path and name of the file to read.
-
-
-    @return: content of the specified file.
-    """
-    with open(os.path.join(os.path.dirname(__file__), file_path_name), 'rt') as fd:
+    with open(file_path_name, mode='rt', encoding='utf-8') as fd:
         return fd.read()
 
 
-def read_package_init_file():
-    """
-    Read the content of the Python init file of this package.
-
-
-    @return: the content of the Python init file located at the root of
-        this package.
-    """
-    return read_file('majormode/__init__.py')
-
-
 setuptools.setup(
-    author=get_author_name(),
-    author_email=get_author_email(),
+    author=__author__,
+    author_email=__email__,
     classifiers = [
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',
@@ -106,17 +62,18 @@ setuptools.setup(
     ],
     description='Python small, little, mini, tiny, micro Object-Relational Mapping (ORM)',
     install_requires=get_requirements(),
-    license='MIT',
-    long_description=read_file('README.md'),
+    license=__license__,
+    long_description=read_file(os.path.join(BASE_DIR, 'README.md')),
     long_description_content_type="text/markdown",
-    name='majormode-perseus-microrm',
+    name='perseus-microrm',
     packages=setuptools.find_packages(),
-    platforms = ['any'],
+    platforms=['any'],
+    python_requires='>=3',
     project_urls={
-        'Bug Tracker': 'https://github.com/dcaune/perseus-lib-python-microrm/issues',
-        'Documentation': 'https://github.com/dcaune/perseus-lib-python-microrm',
-        'Source Code': 'https://github.com/dcaune/perseus-lib-python-microrm',
+        'Bug Tracker': 'https://github.com/dcaune/perseus-microrm-python-library/issues',
+        'Documentation': 'https://github.com/dcaune/perseus-microrm-python-library',
+        'Source Code': 'https://github.com/dcaune/perseus-microrm-python-library',
     },
-    version=str(get_version()),
-    url='https://github.com/dcaune/perseus-lib-python-microrm',
+    version=__version__,
+    url='https://github.com/dcaune/perseus-microrm-python-library',
 )
