@@ -85,7 +85,6 @@ PATTERN_SQL_PLACEHOLDER_EXPRESSIONS = {
 # }
 
 
-
 class RdbmsConnection(object):
     """
     Represent a connection to a Relational DataBase Management System
@@ -181,7 +180,6 @@ class RdbmsConnection(object):
         """
         pass
 
-
     class RdbmsCursor(object):
         """
         Represent a database cursor, which is used to manage the context of a
@@ -195,9 +193,9 @@ class RdbmsConnection(object):
             @param cursor: a Python database cursor.
             """
             self.__native_cursor = cursor
-            self.__column_index_dict = {} if cursor.description is None else \
-              dict([ (cursor.description[column_index][0], column_index)
-                       for column_index in range(len(cursor.description)) ])
+            self.__column_index_dict = dict() if cursor.description is None else \
+              dict([(cursor.description[column_index][0], column_index)
+                    for column_index in range(len(cursor.description)) ])
 
 
         def fetch_one(self):
@@ -206,10 +204,10 @@ class RdbmsConnection(object):
             instance, or ``None`` when no more data is available.
 
             @return: a ``RdbmsRow`` instance or ``None`` when no more data is
-                     available.
+                available.
             """
             row = self.__native_cursor.fetchone()
-            return None if row is None else RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
+            return row and RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
 
 
         def fetch_all(self):
@@ -232,7 +230,6 @@ class RdbmsConnection(object):
                      cursor.
             """
             return self.__native_cursor.rowcount
-
 
     class RdbmsObject(Serializable):
         """
@@ -263,9 +260,10 @@ class RdbmsConnection(object):
             """
             self.__dict__ = dict([
                 (column_name,
-                 RdbmsConnection.RdbmsObject.decode(row[column_index],
-                        None if cast_operators is None else cast_operators.get(column_name)))
-                    for (column_name, column_index) in column_index_dict.items() ])
+                 RdbmsConnection.RdbmsObject.decode(
+                    row[column_index],
+                    cast_operators and cast_operators.get(column_name)))
+                for (column_name, column_index) in column_index_dict.items() ])
 
 
         @staticmethod
@@ -277,7 +275,6 @@ class RdbmsConnection(object):
             return _value if _value is None or cast_operator is None else \
                 cast.string_to_enum(_value, cast_operator) if isinstance(cast_operator, enum.Enum) \
                 else cast_operator(_value)
-
 
     class RdbmsRow(object):
         """
@@ -335,7 +332,6 @@ class RdbmsConnection(object):
 
             return RdbmsConnection.RdbmsObject.decode(value, cast_operator=cast_operator)
 
-
     def __init__(self, hostname, port, database_name,
                  account_username, account_password,
                  logger_name=None,
@@ -368,7 +364,6 @@ class RdbmsConnection(object):
 
         self._reference_count = 0
 
-
     def __enter__(self):
         """
         Enter the runtime context, open a connection to the RDBMS server, and
@@ -379,14 +374,14 @@ class RdbmsConnection(object):
         """
         if self._reference_count == 0:
             self.__connection = psycopg2.connect(
-                    host=self.hostname, port=self.port,
-                    database=self.database_name,
-                    user=self.account_username, password=self.account_password)
+                host=self.hostname, port=self.port,
+                database=self.database_name,
+                user=self.account_username,
+                password=self.account_password)
 
         self._reference_count += 1
 
         return self
-
 
     def __exit__(self, exception_type, exception_value, exception_traceback):
         """
@@ -419,8 +414,7 @@ class RdbmsConnection(object):
 
             self.__connection.close()
 
-        return False # Propagate the exception, if any.
-
+        return False  # Propagate the exception, if any.
 
     @staticmethod
     def acquire_connection(settings, tag=None, logger_name=None, auto_commit=False):
@@ -478,10 +472,8 @@ class RdbmsConnection(object):
             logger_name=logger_name,
             auto_commit=auto_commit)
 
-
     def commit(self):
         self.__connection.commit()
-
 
     def execute(self, sql_statement, parameters=None):
         """
@@ -562,7 +554,7 @@ class RdbmsConnection(object):
             #     underlying value which is a special SQL expression, such as a
             #     call of a stored procedure.
             for (name, value) in parameters.iteritems():
-                if not isinstance(value, (types.NoneType, bool, int, long, float, basestring, tuple, list, set)):
+                if type(value) in [type(c) for c in (None, bool, int, float, str, tuple, list, set)]:
                     parameters[name] = obj.stringify(value)
 
             # Replace the placeholders in the SQL statement for which the database
@@ -573,10 +565,13 @@ class RdbmsConnection(object):
         # Compact the SQL statement expression removing useless space and
         # newline characters, and stripping all SQL comments.
         sql_statement = ' '.join(
-                [ line for line in [ line.strip() for line in REGEX_PATTERN_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines() ]
-                      if len(line) > 0 ])
+            [line
+             for line in [
+                line.strip()
+                for line in REGEX_PATTERN_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines()]
+             if len(line) > 0])
 
-        self.logger.debug('[DEBUG] Executing SQL statement:\n%s\n\twith: %s' % (sql_statement, parameters))
+        self.logger.debug(f'[DEBUG] Executing SQL statement:\n{sql_statement}\n\twith: {parameters}')
 
         if self.__cursor is None:
             self.__cursor = self.__connection.cursor()
@@ -612,15 +607,16 @@ class RdbmsConnection(object):
         @return: a SQL string representation.
         """
         if isinstance(value, (list, set)) or (isinstance(value, tuple) and len(value) != 1):
-            sql_value = ','.join( [ RdbmsConnection._to_sql_value(
-                        element if not isinstance(element, tuple) else element[0],
-                        noquote=isinstance(element, tuple))
-                    for element in value ])
+            sql_value = ','.join([
+                RdbmsConnection._to_sql_value(
+                    element if not isinstance(element, tuple) else element[0],
+                    noquote=isinstance(element, tuple))
+                for element in value])
 
         elif isinstance(value, tuple):
             assert len(value) == 1
             value = value[0]
-            assert value is None or isinstance(value, basestring), 'basestring expected instead of %s' % type(value)
+            assert value is None or isinstance(value, str), 'basestring expected instead of %s' % type(value)
             sql_value = RdbmsConnection._to_sql_value(value, True)
 
         else:
@@ -663,24 +659,26 @@ class RdbmsConnection(object):
                         placeholder_value = parameters[placeholder_name]
 
                         if placeholder_type == PlaceholderType.nested_list \
-                                and (isinstance(placeholder_value, tuple) and len(placeholder_value) == 1) \
-                                and not isinstance(placeholder_value, (list, set, tuple)):
-                            raise ValueError('The value to replace the placeholder "%s" is not a list as expected' % placeholder_name)
+                            and (isinstance(placeholder_value, tuple) and len(placeholder_value) == 1) \
+                            and not isinstance(placeholder_value, (list, set, tuple)):
+                            raise ValueError(f'The value for "{placeholder_name}" is not a list')
 
                         placeholders[placeholder_name] = (placeholder_type, placeholder_value)
                         break
 
         except KeyError:
-            raise ValueError('The placeholder %s has no corresponding parameter' % placeholder_name)
+            raise ValueError(f'The placeholder {placeholder_name} has no corresponding parameter')
 
         # Check whether all the specified parameters have their corresponding
         # placeholder in the SQL statement.
-        undefined_placeholders = [ parameter for parameter in parameters.iterkeys()
-                if parameter not in placeholders ]
+        undefined_placeholders = [
+            parameter
+            for parameter in parameters.iterkeys()
+            if parameter not in placeholders]
 
         if undefined_placeholders:
-            raise ValueError('The placeholders %s are missing from the extended pyformat SQL statement\n%s' \
-                    % (', '.join([ '"%s"' % _ for _ in undefined_placeholders ]), sql_statement))
+            raise ValueError('The placeholders %s are missing from the extended pyformat SQL statement\n%s'
+                             % (', '.join([ '"%s"' % _ for _ in undefined_placeholders ]), sql_statement))
 
         return placeholders
 
@@ -702,9 +700,9 @@ class RdbmsConnection(object):
             placehodlers have been replaced by the value of the corresponding
             variables, depending on the type of these variables.
         """
-        placehoolders = RdbmsConnection._get_placeholders(sql_statement, parameters)
+        placeholders = RdbmsConnection._get_placeholders(sql_statement, parameters)
 
-        for (variable_name, (variable_type, variable_value)) in placehoolders.iteritems():
+        for (variable_name, (variable_type, variable_value)) in placeholders.iteritems():
             # Only expand parameters whose value corresponds to a list.
             if isinstance(variable_value, (list, set, tuple)):
                 sql_statement = RdbmsConnection._replace_placeholder(sql_statement,
@@ -737,13 +735,13 @@ class RdbmsConnection(object):
 
 
         @return: a string expression of the SQL statement where the
-            paceholders of the specified variable have been replace by the
+            placeholders of the specified variable have been replace by the
             value of this variable, depending on the type of this varialble.
         """
         (variable_name, variable_type, variable_value) = variable
 
         sql_value = RdbmsConnection._expand_placeholder_value(variable_value) if variable_type == PlaceholderType.simple_list \
-            else ','.join([ '(%s)' % RdbmsConnection._expand_placeholder_value(v) for v in variable_value ])
+            else ','.join(['(%s)' % RdbmsConnection._expand_placeholder_value(v) for v in variable_value])
 
         return re.sub(PATTERN_SQL_PLACEHOLDER_EXPRESSIONS[variable_type] % variable_name, sql_value, sql_statement)
 
@@ -763,7 +761,7 @@ class RdbmsConnection(object):
         # Convert to string the values that the database adapter can't adapt
         # to a SQL type.
         # [http://initd.org/psycopg/docs/usage.html#query-parameters]
-        if not isinstance(value, (types.NoneType, bool, int, long, float, basestring)):
+        if type(value) not in [type(c) for c in (None, bool, int, float, str)]:
             value = obj.stringify(value)
 
         if noquote:
@@ -778,5 +776,5 @@ class RdbmsConnection(object):
         #     use it for rewriting an SQL statement, which will break the text
         #     encoding.
         return 'NULL' if value is None \
-                else '%s' % str(value) if isinstance(value, (bool, int, long, float)) \
-                else "e'%s'" % unicode(value).replace("'", "''").replace('\\', '\\\\').replace('%', '%%')
+            else '%s' % str(value) if isinstance(value, (bool, int, float)) \
+            else "e'%s'" % value.replace("'", "''").replace('\\', '\\\\').replace('%', '%%')
