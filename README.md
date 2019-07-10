@@ -9,7 +9,7 @@ MicrORM is not a object-relational mapping in the sense it maps Pyth objects to 
 To install [Perseus MicrORM Python Library](https://github.com/dcaune/perseus-microrm-python-library), simply enter the follow command line:
 
 ``` shell
-pip install perseus-microrm
+pip install perseus-microrm-library
 ```
 
 ## Usage

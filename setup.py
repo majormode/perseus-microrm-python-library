@@ -65,7 +65,7 @@ setuptools.setup(
     license=__license__,
     long_description=read_file(os.path.join(BASE_DIR, 'README.md')),
     long_description_content_type="text/markdown",
-    name='perseus-microrm',
+    name='perseus-microrm-library',
     packages=setuptools.find_packages(),
     platforms=['any'],
     python_requires='>=3',
