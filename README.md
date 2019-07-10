@@ -39,7 +39,8 @@ PLACE_IDS = [
 with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
         auto_commit=False,
         connection=None) as connection:
-    cursor = connection.execute('''
+    cursor = connection.execute(
+        """
         SELECT place_id,
                ST_X(location) AS longitude,
                ST_Y(location) AS latitude,
@@ -47,11 +48,15 @@ with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
                accuracy,
                creation_time
           FROM place
-          WHERE place_id IN %[place_ids]s''',
-        { 'place_ids': PLACE_IDS })
+          WHERE place_id IN %[place_ids]s
+        """,
+        {
+            'place_ids': PLACE_IDS 
+        })
     rows = cursor.fetch_all()
 
-    places = [row.get_object({
+    places = [
+        row.get_object({
             'place_id': cast.string_to_uuid,
             'creation_time': cast.string_to_timestamp})
         for row in cursor.fetch_all()]
