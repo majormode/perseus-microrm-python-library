@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2018 Majormode.
+# Copyright (C) 2019 Majormode.  All rights reserved.
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -15,7 +13,7 @@
 #
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-# MERCHANTABILITY,# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
 # IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
 # CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
@@ -25,34 +23,31 @@ import datetime
 import logging
 import psycopg2
 import re
-import types
 
-from majormode.perseus.model import enum
+from majormode.perseus.model.enum import Enum
 from majormode.perseus.model import obj
 from majormode.perseus.model.obj import Serializable
 from majormode.perseus.utils import cast
 
 
-MAX_INT = 2147483647
-
 # Regular expression that matches any valid SQL comments such as:
 #
-# * comment that starts with the characters ``--`` and followed by any
+# * comment that starts with the characters `--` and followed by any
 #   characters until the end of the line.</li>
 #
-# * a C-like comment that starts with ``/*`` and ends with ``*/``.
-REGEX_PATTERN_SQL_COMMENT = re.compile(r'(--[^\n]*[\n])|(/\*([^/]|([^*]/))*\*/)|(/\*\*/)')
+# * a C-like comment that starts with `/*` and ends with `*/`.
+REGEX_SQL_COMMENT = re.compile(r'(--[^\n]*[\n])|(/\*([^/]|([^*]/))*\*/)|(/\*\*/)')
 
 # Regular expression that matches a placeholder, also known as a named
 # variable, within a parameterized SQL statement, such as:
 #
-# * ``%(foo)s``: element or list of elements
+# * `%(foo)s`: element or list of elements
 #
 #       SELECT * FROM foo WHERE a = %(a)s
 #
 #       SELECT * FROM foo WHERE a IN (%(a)s)
 #
-# * ``%[foo]s``: nested list of elements
+# * `%[foo]s`: nested list of elements
 #
 #       SELECT * FROM (VALUES %[a]s) AS foo(a, b)
 #
@@ -60,7 +55,7 @@ REGEX_PATTERN_SQL_COMMENT = re.compile(r'(--[^\n]*[\n])|(/\*([^/]|([^*]/))*\*/)|
 # PATTERN_SQL_PLACEHOLDER_SIMPLE_LIST =
 # PATTERN_SQL_PLACEHOLDER_NESTED_LIST =
 
-PlaceholderType = enum.Enum(
+PlaceholderType = Enum(
     'simple_list',
     'nested_list'
 )
@@ -90,29 +85,29 @@ class RdbmsConnection(object):
     Represent a connection to a Relational DataBase Management System
     (RDBMS)::
 
-        with RdbmsConnection.acquire_connection() as connection:
-            cursor = connection.execute('''
-                SELECT a, b, c
-                  FROM foo
-                  WHERE a = %(a)s''',
-                { 'a': 1 })
+    ``python
+    >>> with RdbmsConnection.acquire_connection() as connection:
+    ...     cursor = connection.execute(
+    ...         "SELECT a, b, c FROM foo WHERE a = %(a)s",
+    ...         {'a': 1})
+    ...
+    ...     # Fetch one row from the result set.
+    ...     row = cursor.fetch_one()
+    ...
+    ...     # Retrieve the value of the specified element from the row fetched.
+    ...     a = row.get_value('a')
+    ...
+    ...     # Retrieve an object built from the row fetched where all the object's
+    ...     # attributes correspond to the element of the row.
+    ...     foo = row.get_object()
+    ...     print(foo.a, foo.b, foo.c)
+    ...
+    ...     # Fetch all the remaining rows from the result set.
+    ...     row_list = cursor.fetch_all()
+    ``
 
-            # Fetch one row from the result set.
-            row = cursor.fetch_one()
-
-            # Retrieve the value of the specified element from the row fetched.
-            a = row.get_value('a')
-
-            # Retrieve an object built from the row fetched where all the object's
-            # attributes correspond to the element of the row.
-            foo = row.get_object()
-            print foo.a, foo.b, foo.c
-
-            # Fetch all the remaning rows from the result set.
-            row_list = cursor.fetch_all()
-
-    The ``execute`` method accepts several types of placeholders in SQL
-    statements::
+    The `execute` method accepts several types of placeholders in SQL
+    statements:
 
     * element: %(element)s
 
@@ -188,46 +183,47 @@ class RdbmsConnection(object):
         """
         def __init__(self, cursor):
             """
-            Build a ``RdbmsCursor`` instance.
+            Build a `RdbmsCursor` instance.
 
-            @param cursor: a Python database cursor.
+
+            :param cursor: a Python database cursor.
             """
             self.__native_cursor = cursor
-            self.__column_index_dict = dict() if cursor.description is None else \
-              dict([(cursor.description[column_index][0], column_index)
-                    for column_index in range(len(cursor.description)) ])
-
+            self.__column_index_dict = {} if cursor.description is None else \
+                dict([
+                    (cursor.description[column_index][0], column_index)
+                    for column_index in range(len(cursor.description))])
 
         def fetch_one(self):
             """
-            Fetch the next row of the query result set, returning a ``RdbmsRow``
-            instance, or ``None`` when no more data is available.
+            Fetch the next row of the query result set, returning a `RdbmsRow`
+            instance, or `None` when no more data is available.
 
-            @return: a ``RdbmsRow`` instance or ``None`` when no more data is
+
+            :return: a `RdbmsRow` instance or `None` when no more data is
                 available.
             """
             row = self.__native_cursor.fetchone()
             return row and RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
 
-
         def fetch_all(self):
             """
             Fetch all remaining rows of the query result, returning a list of
-            ``RdbmsRow`` instance.
+            `RdbmsRow` instance.
 
-            @return: a list of ``RdbmsRow`` instance.
+
+            :return: a list of `RdbmsRow` instance.
             """
-            return [ RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
-                       for row in self.__native_cursor.fetchall() ]
-
+            return [RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
+                    for row in self.__native_cursor.fetchall()]
 
         def get_row_count(self):
             """
-            Return the number of rows that the last ``execute`` produced.
+            Return the number of rows that the last `execute` produced.
 
-            @return: the number of rows that the last ``execute`` produced, or
-                     ``-1`` in case no execute statement has been performed on the
-                     cursor.
+            :return: the number of rows that the last `execute` produced, or
+                `-1` in case no execute statement has been performed on the
+                cursor.
             """
             return self.__native_cursor.rowcount
 
@@ -239,32 +235,35 @@ class RdbmsConnection(object):
         """
         def __init__(self, column_index_dict, row, cast_operators=None):
             """
-            Build a ``RdbmsRow`` instance providing a database row and the
+            Build a `RdbmsRow` instance providing a database row and the
             description of the columns.
 
-            @param column_index_dict: a dictionary where the key corresponds to
-                   the name of a column and the value references the index of this
-                   column in the row.
-            @param row: a sequence of values that a query statement returned.
-            @param cast_operators: dictionary of Python data types to which the
-                   values of some columns need to be casted to.  A key of the
-                   dictionary corresponds to the name of a column; the value
-                   corresponds to a Python class which constructor accepts a
-                   Unicode string, or a function, responsible to cast the column's
-                   value into the expected data type:
 
-                     {
-                       "account_id": uuid.UUID,
-                       "coordinates": majormode.perseus.model.GeographicCoordinates
-                     }
+            :param column_index_dict: a dictionary where the key corresponds to
+                the name of a column and the value references the index of this
+                column in the row.
+
+            :param row: a sequence of values that a query statement returned.
+
+            :param cast_operators: dictionary of Python data types to which the
+                values of some columns need to be casted to.  A key of the
+                dictionary corresponds to the name of a column; the value
+                corresponds to a Python class which constructor accepts a Unicode
+                string, or a function, responsible to cast the column's value into
+                the expected data type:
+
+                    {
+                      "account_id": uuid.UUID,
+                      "coordinates": majormode.perseus.model.GeographicCoordinates
+                    }
             """
+            super().__init__()
             self.__dict__ = dict([
                 (column_name,
                  RdbmsConnection.RdbmsObject.decode(
-                    row[column_index],
-                    cast_operators and cast_operators.get(column_name)))
-                for (column_name, column_index) in column_index_dict.items() ])
-
+                     row[column_index],
+                     cast_operators or cast_operators.get(column_name)))
+                for (column_name, column_index) in column_index_dict.items()])
 
         @staticmethod
         def decode(value, cast_operator=None):
@@ -272,46 +271,49 @@ class RdbmsConnection(object):
                 else str(value) if isinstance(value, datetime.datetime) \
                 else value
 
-            return _value if _value is None or cast_operator is None else \
-                cast.string_to_enum(_value, cast_operator) if isinstance(cast_operator, enum.Enum) \
-                else cast_operator(_value)
+            return _value and cast_operator and \
+                (cast.string_to_enum(_value, cast_operator) if isinstance(cast_operator, Enum)
+                 else cast_operator(_value))
 
-    class RdbmsRow(object):
+    class RdbmsRow:
         """
         Represent a row fetched from the result of a query statement.
         """
         def __init__(self, column_index_dict, row):
             """
-            Build a new ``RdbmsRow`` providing a database row and the description
+            Build a new `RdbmsRow` providing a database row and the description
             of the columns.
 
-            @param column_index_dict: a dictionary where the key corresponds to
-                   the name of a column and the value references the index of this
-                   column in the row.
-            @param row: a sequence of values that a query statement returned.
+            :param column_index_dict: a dictionary where the key corresponds to
+                the name of a column and the value references the index of this
+                column in the row.
+
+            :param row: a sequence of values that a query statement returned.
             """
             self.__column_index_dict = column_index_dict
             self.__row = row
 
         def get_object(self, cast_operators=None):
             """
-            Return an ``RdbmsObject`` that represents a row fetched from the
+            Return an `RdbmsObject` that represents a row fetched from the
             result of a query statement, where each member of this instance
             corresponds to a column that has been selected in the query statement.
 
-            @param cast_opertors: dictionary of Python data types to which the
-                   values of some columns need to be casted to.  A key of the
-                   dictionary corresponds to the name of a column; the value
-                   corresponds to a Python class which constructor accepts a
-                   Unicode string, or a function, responsible to cast the column's
-                   value into the expected data type:
 
-                     {
-                       "account_id": uuid.UUID,
-                       "coordinates": majormode.perseus.model.GeographicCoordinates
-                     }
+            :param cast_operators: dictionary of Python data types to which the
+                values of some columns need to be casted to.  A key of the
+                dictionary corresponds to the name of a column; the value
+                corresponds to a Python class which constructor accepts a Unicode
+                string, or a function, responsible to cast the column's value into the
+                expected data type:
 
-            @return: an ``RdbmsObject``.
+                {
+                  "account_id": uuid.UUID,
+                  "coordinates": majormode.perseus.model.GeographicCoordinates
+                }
+
+
+            :return: an `RdbmsObject`.
             """
             return RdbmsConnection.RdbmsObject(self.__column_index_dict, self.__row, cast_operators)
 
@@ -319,12 +321,15 @@ class RdbmsConnection(object):
             """
             Return the value of the specified column.
 
-            @param column_name: a column name.  Case is sensitive.
-            @param cast_operator: a Python class which constructor accepts a
-                   Unicode string, or a function, responsible to cast the column's
-                   value into the expected data type:
 
-            @return: the value of the column.
+            :param column_name: a column name.  Case is sensitive.
+
+            :param cast_operator: a Python class which constructor accepts a
+                Unicode string, or a function, responsible to cast the column's
+                value into the expected data type:
+
+
+            :return: the value of the column.
             """
             value = self.__row[self.__column_index_dict[column_name]]
             if cast_operator is None:
@@ -337,18 +342,25 @@ class RdbmsConnection(object):
                  logger_name=None,
                  auto_commit=False):
         """
-        Build a ``RdbmsConnection`` instance providing properties of
+        Build a `RdbmsConnection` instance providing properties of
         connection to Relational DataBase Management System (RDBMS).
 
-        @param hostname: hostname of the Rdbms server to connect to.
-        @param port: port number the Rdbms server listens at.
-        @param database_name: name of the database to use.
-        @param account_username: username of the database account on whose
-               behalf the connection is being made to the RDBMS server.
-        @param account_password: password of the user account.
-        @param logger_name: name of the logger for debug information.
-        @param auto_commit: indicate whether the transaction needs to be
-               committed at the end of the session.
+
+        :param hostname: hostname of the RDBMS server to connect to.
+
+        :param port: port number the RDBMS server listens at.
+
+        :param database_name: name of the database to use.
+
+        :param account_username: username of the database account on whose
+            behalf the connection is being made to the RDBMS server.
+
+        :param account_password: password of the user account.
+
+        :param logger_name: name of the logger for debug information.
+
+        :param auto_commit: indicate whether the transaction needs to be
+            committed at the end of the session.
         """
         self.hostname = hostname
         self.port = port
@@ -367,14 +379,16 @@ class RdbmsConnection(object):
     def __enter__(self):
         """
         Enter the runtime context, open a connection to the RDBMS server, and
-        return this object to allow ``execute`` to be used as the context
-        expression in a ``with`` statement.
+        return this object to allow `execute` to be used as the context
+        expression in a `with` statement.
 
-        @return: this ``RdbmsConnection`` object.
+
+        :return: this `RdbmsConnection` object.
         """
         if self._reference_count == 0:
             self.__connection = psycopg2.connect(
-                host=self.hostname, port=self.port,
+                host=self.hostname,
+                port=self.port,
                 database=self.database_name,
                 user=self.account_username,
                 password=self.account_password)
@@ -390,21 +404,23 @@ class RdbmsConnection(object):
 
         The parameters describe the exception that caused the context to be
         exited.  If the context was exited without an exception, all three
-        arguments will be ``None``.
+        arguments will be `None`.
 
-        @param exception_type: the exception type of the exception being
-               handled (a class object).
-        @param exception_value: exception parameter (its associated value or
-               the second argument to raise, which is always a class instance
-               if the exception type is a class object).
-        @param exception_traceback: a traceback object which encapsulates the
-               call stack at the point where the exception originally
-               occurred.
 
-        @return: ``False`` to indicate whether, if an exception occurred while
-                 executing the body of the with statement, the exception has
-                 to continue propagating after this method has finished
-                 executing.
+        :param exception_type: the exception type of the exception being
+            handled (a class object).
+
+        :param exception_value: exception parameter (its associated value or
+            the second argument to raise, which is always a class instance
+            if the exception type is a class object).
+
+        :param exception_traceback: a traceback object which encapsulates the
+            call stack at the point where the exception originally occurred.
+
+
+        :return: `False` to indicate whether, if an exception occurred while
+            executing the body of the with statement, the exception has to
+            continue propagating after this method has finished executing.
         """
         self._reference_count -= 1
 
@@ -422,7 +438,9 @@ class RdbmsConnection(object):
         Return a connection to a Relational DataBase Management System (RDBMS)
         the most appropriate for the service requesting this connection.
 
-        @param settings: a dictionary of connection properties::
+
+        :param settings: a dictionary of connection properties::
+
                    {
                      None: {
                        'rdbms_hostname': "...",
@@ -440,23 +458,24 @@ class RdbmsConnection(object):
                      },
                      ...
                    }
-               The key ``None`` is the default tag.
+               The key `None` is the default tag.
 
-        @param tag: a tag that specifies which particular connection
-           properties has to be used.
+        :param tag: a tag that specifies which particular connection properties
+            has to be used.
 
-        @param logger_name: name of the logger for debug information.
+        :param logger_name: name of the logger for debug information.
 
-        @param auto_commit: indicate whether the transaction needs to be
-           committed at the end of the session.
+        :param auto_commit: indicate whether the transaction needs to be
+            committed at the end of the session.
 
-        @return: a ``RdbmsConnection`` instance to be used supporting the
-             Python clause ``with ...:``.
+
+        :return: a `RdbmsConnection` instance to be used supporting the
+            Python clause `with ...:`.
+
 
         @raise DefaultConnectionPropertiesSettingException: if the specified
-               tag is not defined in the dictionary of connection properties,
-               and when no default connection properties is defined either
-               (tag ``None``).
+            tag is not defined in the dictionary of connection properties,
+            and when no default connection properties is defined either (tag `None`).
         """
         try:
             connection_properties = settings.get(tag, settings[None])
@@ -464,13 +483,17 @@ class RdbmsConnection(object):
             raise RdbmsConnection.DefaultConnectionPropertiesSettingException()
 
         return RdbmsConnection(
-            connection_properties['rdbms_hostname'],
-            connection_properties['rdbms_port'],
-            connection_properties['rdbms_database_name'],
-            connection_properties['rdbms_account_username'],
-            connection_properties['rdbms_account_password'],
-            logger_name=logger_name,
-            auto_commit=auto_commit)
+                connection_properties['rdbms_hostname'],
+                connection_properties['rdbms_port'],
+                connection_properties['rdbms_database_name'],
+                connection_properties['rdbms_account_username'],
+                connection_properties['rdbms_account_password'],
+                logger_name=logger_name,
+                auto_commit=auto_commit)
+
+    @property
+    def auto_commit(self):
+        return self.__auto_commit
 
     def commit(self):
         self.__connection.commit()
@@ -484,65 +507,65 @@ class RdbmsConnection(object):
         @note: each result column MUST be named with distinct names.
 
 
-        @param sql_statement: a string representation of a Structured Query
+        :param sql_statement: a string representation of a Structured Query
             Language (SQL) expression including Python extended format codes,
             also known as "pyformat", and extended pyformat code.  The
             following forms are accepted:
 
-            * ``%(name)s``: indicate a simple value as for instance in::
+            * `%(name)s`: indicate a simple value as for instance in::
 
                   INSERT INTO foo(bar)
                     VALUES (%(value)s)
 
-              with ``parameters``::
+              with `parameters`::
 
                   { 'value': 'something' }
 
 
-            * ``%[name]s``: indicate a list of simple values such as, for
+            * `%[name]s`: indicate a list of simple values such as, for
               instance, in::
 
                   INSERT INTO foo(bar)
                     VALUES %[values]s
 
-              with ``parameters``::
+              with `parameters`::
 
                   { 'values': [ i for i in range(8) ] }
 
-            * ``%[name]s``: indicate a list of tuples as for instance in::
+            * `%[name]s`: indicate a list of tuples as for instance in::
 
                   INSERT INTO foo(a, b, c)
                     VALUES %[values]s
 
-              with ``parameters``::
+              with `parameters`::
 
                   { 'values': [ [ 0, 'a', '!' ],
                                 [ 1, 'b', '@' ]
                                 [ 2, 'c', '#' ] ] }
 
-            * ``%[name]s``: indicate a list of tuples of ``(boolean, value)``
+            * `%[name]s`: indicate a list of tuples of `(boolean, value)`
               where:
 
-              * ``boolean``: ``True`` if the value MUST be used as it,
-                ``False`` if the value needs to be quoted.
+              * `boolean`: `True` if the value MUST be used as it,
+                `False` if the value needs to be quoted.
 
-              * ``value``: the value itself.
+              * `value`: the value itself.
 
               as for instance in::
 
                   INSERT INTO foo(id, coordinates)
                     VALUES %[values]s
 
-              with ``parameters``::
+              with `parameters`::
 
                   { 'values': [ [ uuid.uuid1(), (False, 'ST_SetSRID(ST_MakePoint(160.1, 10.6), 4326)') ],
                                 [ uuid.uuid1(), (False, 'ST_SetSRID(ST_MakePoint(160.1, 10.6), 4326)') ],
                                 [ uuid.uuid1(), (False, 'ST_SetSRID(ST_MakePoint(160.1, 10.6), 4326)') ] ] }
 
-        @param parameters: a dictionary of parameters.
+        :param parameters: a dictionary of parameters.
 
 
-        @return: a cursor object representing a database cursor, which is used
+        :return: a cursor object representing a database cursor, which is used
             to manage the context of a fetch operation.
         """
         if parameters:
@@ -553,9 +576,9 @@ class RdbmsConnection(object):
             # @note: tuple is a special type used to indicate not to quote the
             #     underlying value which is a special SQL expression, such as a
             #     call of a stored procedure.
-            for (name, value) in parameters.iteritems():
-                if type(value) in [type(c) for c in (None, bool, int, float, str, tuple, list, set)]:
-                    parameters[name] = obj.stringify(value)
+            for (name, value) in parameters.items():
+                if not isinstance(value, (type(None), bool, int, float, str, tuple, list, set)):
+                    parameters[name] = obj.stringify_attributes(value)
 
             # Replace the placeholders in the SQL statement for which the database
             # adapter cannot adapt the Python value to SQL types, for instance,
@@ -568,10 +591,10 @@ class RdbmsConnection(object):
             [line
              for line in [
                 line.strip()
-                for line in REGEX_PATTERN_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines()]
+                for line in REGEX_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines()]
              if len(line) > 0])
 
-        self.logger.debug(f'[DEBUG] Executing SQL statement:\n{sql_statement}\n\twith: {parameters}')
+        self.logger.debug(f'Executing SQL statement:\n{sql_statement}\n\twith: {parameters}')
 
         if self.__cursor is None:
             self.__cursor = self.__connection.cursor()
@@ -580,7 +603,10 @@ class RdbmsConnection(object):
         self.__cursor.execute(sql_statement, parameters)
         execution_end_time = datetime.datetime.now()
         execution_duration = execution_end_time - execution_start_time
-        self.logger.debug('Time: %d ms' % ((execution_duration.seconds * 1000) + (execution_duration.microseconds / 1000)))
+
+        execution_duration_milliseconds = execution_duration.seconds * 1000 + \
+            execution_duration.microseconds / 1000
+        self.logger.debug(f'Time: {execution_duration_milliseconds} ms')
 
         return RdbmsConnection.RdbmsCursor(self.__cursor)
 
@@ -594,7 +620,7 @@ class RdbmsConnection(object):
         value.
 
 
-        @param value: the value of a placeholder such as a simple element, a
+        :param value: the value of a placeholder such as a simple element, a
             list, or a tuple of one string.
 
 
@@ -604,7 +630,7 @@ class RdbmsConnection(object):
             table.
 
 
-        @return: a SQL string representation.
+        :return: a SQL string representation.
         """
         if isinstance(value, (list, set)) or (isinstance(value, tuple) and len(value) != 1):
             sql_value = ','.join([
@@ -616,7 +642,7 @@ class RdbmsConnection(object):
         elif isinstance(value, tuple):
             assert len(value) == 1
             value = value[0]
-            assert value is None or isinstance(value, str), 'basestring expected instead of %s' % type(value)
+            assert value is None or isinstance(value, str), f'String expected instead of {type(value)}'
             sql_value = RdbmsConnection._to_sql_value(value, True)
 
         else:
@@ -631,21 +657,21 @@ class RdbmsConnection(object):
         statement.
 
 
-        @param sql_statement: a parameterized statement.
+        :param sql_statement: a parameterized statement.
 
-        @param parameters: the list of parameters used in the SQL statement.
+        :param parameters: the list of parameters used in the SQL statement.
 
 
-        @return: a dictionary of placeholders where the key represents the
+        :return: a dictionary of placeholders where the key represents the
             name of a placeholder, the value corresponds to a tuple::
 
-                (``type:PlaceholderType``, ``value``)
+                (`type:PlaceholderType`, `value`)
 
             where :
 
-            * ``type``: type of the placeholder
+            * `type`: type of the placeholder
 
-            * ``value``: value to replace the placeholder.
+            * `value`: value to replace the placeholder.
         """
         # Find the list of placeholders, and their type, defined in the SQL
         # statement.
@@ -653,7 +679,7 @@ class RdbmsConnection(object):
 
         try:
             for match in REGEX_PATTERN_SQL_PLACEHOLDERS.findall(sql_statement):
-                for (i, placeholder_type) in enumerate(PlaceholderType._values):
+                for (i, placeholder_type) in enumerate(PlaceholderType):
                     placeholder_name = match[i]
                     if placeholder_name:
                         placeholder_value = parameters[placeholder_name]
@@ -661,7 +687,7 @@ class RdbmsConnection(object):
                         if placeholder_type == PlaceholderType.nested_list \
                             and (isinstance(placeholder_value, tuple) and len(placeholder_value) == 1) \
                             and not isinstance(placeholder_value, (list, set, tuple)):
-                            raise ValueError(f'The value for "{placeholder_name}" is not a list')
+                            raise ValueError(f'The value to replace the placeholder "{placeholder_name}" is not a list as expected')
 
                         placeholders[placeholder_name] = (placeholder_type, placeholder_value)
                         break
@@ -677,8 +703,9 @@ class RdbmsConnection(object):
             if parameter not in placeholders]
 
         if undefined_placeholders:
-            raise ValueError('The placeholders %s are missing from the extended pyformat SQL statement\n%s'
-                             % (', '.join([ '"%s"' % _ for _ in undefined_placeholders ]), sql_statement))
+            raise ValueError(
+                'The placeholders %s are missing from the extended pyformat SQL statement\n%s' %
+                (', '.join(['"%s"' % _ for _ in undefined_placeholders]), sql_statement))
 
         return placeholders
 
@@ -688,25 +715,26 @@ class RdbmsConnection(object):
         Prepare the specified SQL statement, replacing the placeholders by the
         value of the given parameters
 
-        @param sql_statement: the string expression of a SQL statement.
+        :param sql_statement: the string expression of a SQL statement.
 
-        @param parameters: a dictionary of parameters where the key represents
+        :param parameters: a dictionary of parameters where the key represents
             the name of a parameter and the value represents the value of this
             parameter to replace in each placeholder of this parameter in the
             SQL statement.
 
 
-        @return: a string representation of the SQL statement where the
+        :return: a string representation of the SQL statement where the
             placehodlers have been replaced by the value of the corresponding
             variables, depending on the type of these variables.
         """
         placeholders = RdbmsConnection._get_placeholders(sql_statement, parameters)
 
-        for (variable_name, (variable_type, variable_value)) in placeholders.iteritems():
+        for (variable_name, (variable_type, variable_value)) in placeholders.items():
             # Only expand parameters whose value corresponds to a list.
             if isinstance(variable_value, (list, set, tuple)):
-                sql_statement = RdbmsConnection._replace_placeholder(sql_statement,
-                        (variable_name, variable_type, variable_value))
+                sql_statement = RdbmsConnection._replace_placeholder(
+                    sql_statement,
+                    (variable_name, variable_type, variable_value))
 
                 # Remove this parameter as it has been expended in the SQL expression.
                 del parameters[variable_name]
@@ -720,27 +748,28 @@ class RdbmsConnection(object):
         its corresponding value.
 
 
-        @param sql_statement: the string expression of a SQL statement to
+        :param sql_statement: the string expression of a SQL statement to
             replace placeholders with their corresponding values.
 
-        @param variable: the variable to use to replace the corresponding
+        :param variable: the variable to use to replace the corresponding
             placeholder(s) in the SQL statement.
 
-            * ``name``: name of the variable.
+            * `name`: name of the variable.
 
-            * ``type``: an instance of ``PlaceholderType``.
+            * `type`: an instance of `PlaceholderType`.
 
-            * ``value``: the value of this variable to replace the corresponding
+            * `value`: the value of this variable to replace the corresponding
               placeholder(s) of this variable in the SQL statement.
 
 
-        @return: a string expression of the SQL statement where the
-            placeholders of the specified variable have been replace by the
+        :return: a string expression of the SQL statement where the
+            paceholders of the specified variable have been replace by the
             value of this variable, depending on the type of this varialble.
         """
-        (variable_name, variable_type, variable_value) = variable
+        variable_name, variable_type, variable_value = variable
 
-        sql_value = RdbmsConnection._expand_placeholder_value(variable_value) if variable_type == PlaceholderType.simple_list \
+        sql_value = RdbmsConnection._expand_placeholder_value(variable_value) \
+            if variable_type == PlaceholderType.simple_list \
             else ','.join(['(%s)' % RdbmsConnection._expand_placeholder_value(v) for v in variable_value])
 
         return re.sub(PATTERN_SQL_PLACEHOLDER_EXPRESSIONS[variable_type] % variable_name, sql_value, sql_statement)
@@ -751,24 +780,24 @@ class RdbmsConnection(object):
         Return the SQL string representation of the specified value.
 
 
-        @param value: a value to convert into its SQL string representation.
+        :param value: a value to convert into its SQL string representation.
 
-        @param noquote: indicate whether to quote or not the specified value.
+        :param noquote: indicate whether to quote or not the specified value.
 
 
-        @return: a SQL string representation of the specified value.
+        :return: a SQL string representation of the specified value.
         """
         # Convert to string the values that the database adapter can't adapt
         # to a SQL type.
         # [http://initd.org/psycopg/docs/usage.html#query-parameters]
-        if type(value) not in [type(c) for c in (None, bool, int, float, str)]:
-            value = obj.stringify(value)
+        if not isinstance(value, (type(None), bool, int, float, str)):
+            value = obj.stringify_attributes(value)
 
         if noquote:
             return value
 
-        # @warning: do not use ``psycopg2.extensions.adapt(value).getquoted()``
-        #     because it returns ``str`` object, which is expected as adaptation
+        # @warning: do not use `psycopg2.extensions.adapt(value).getquoted()`
+        #     because it returns `str` object, which is expected as adaptation
         #     is taking a Python object and converting it into a SQL
         #     representation: this is always a bytes string, as it has to be
         #     sent to the socket.  However the caller might not use the quoted
