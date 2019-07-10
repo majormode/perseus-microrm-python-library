@@ -57,5 +57,5 @@ with RdbmsConnection.acquire_connection(RDBMS_CONNECTION_PROPERTIES,
         for row in cursor.fetch_all()]
 
     for place in places:
-        print place.place_id, place.longitude, place.latitude
+        print(place.place_id, place.longitude, place.latitude)
 ```
