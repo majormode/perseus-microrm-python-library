@@ -267,7 +267,7 @@ class RdbmsConnection(object):
 
         @staticmethod
         def decode(value, cast_operator=None):
-            _value = value.decode('utf-8') if isinstance(value, str) \
+            _value = value if isinstance(value, str) \
                 else str(value) if isinstance(value, datetime.datetime) \
                 else value
 
