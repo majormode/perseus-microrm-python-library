@@ -699,7 +699,7 @@ class RdbmsConnection(object):
         # placeholder in the SQL statement.
         undefined_placeholders = [
             parameter
-            for parameter in parameters.iterkeys()
+            for parameter in parameters
             if parameter not in placeholders]
 
         if undefined_placeholders:
