@@ -258,12 +258,13 @@ class RdbmsConnection(object):
                     }
             """
             super().__init__()
+            print(cast_operators)
             self.__dict__ = dict([
                 (column_name,
                  RdbmsConnection.RdbmsObject.decode(
                      row[column_index],
-                     cast_operators or cast_operators.get(column_name)))
-                for (column_name, column_index) in column_index_dict.items()])
+                     cast_operators and cast_operators.get(column_name)))
+                for column_name, column_index in column_index_dict.items()])
 
         @staticmethod
         def decode(value, cast_operator=None):
