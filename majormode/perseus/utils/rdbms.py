@@ -258,7 +258,6 @@ class RdbmsConnection(object):
                     }
             """
             super().__init__()
-            print(cast_operators)
             self.__dict__ = dict([
                 (column_name,
                  RdbmsConnection.RdbmsObject.decode(
@@ -268,13 +267,14 @@ class RdbmsConnection(object):
 
         @staticmethod
         def decode(value, cast_operator=None):
-            _value = value if isinstance(value, str) \
-                else str(value) if isinstance(value, datetime.datetime) \
-                else value
+            if isinstance(value, datetime.datetime):
+                value = str(value)
 
-            return _value and cast_operator and \
-                (cast.string_to_enum(_value, cast_operator) if isinstance(cast_operator, Enum)
-                 else cast_operator(_value))
+            if cast_operator:
+                return cast.string_to_enum(value, cast_operator) if isinstance(cast_operator, Enum) \
+                    else cast_operator(value)
+            else:
+                return value
 
     class RdbmsRow:
         """
@@ -579,7 +579,7 @@ class RdbmsConnection(object):
             #     call of a stored procedure.
             for (name, value) in parameters.items():
                 if not isinstance(value, (type(None), bool, int, float, str, tuple, list, set)):
-                    parameters[name] = obj.stringify_attributes(value)
+                    parameters[name] = obj.stringify(value)
 
             # Replace the placeholders in the SQL statement for which the database
             # adapter cannot adapt the Python value to SQL types, for instance,
@@ -792,7 +792,7 @@ class RdbmsConnection(object):
         # to a SQL type.
         # [http://initd.org/psycopg/docs/usage.html#query-parameters]
         if not isinstance(value, (type(None), bool, int, float, str)):
-            value = obj.stringify_attributes(value)
+            value = obj.stringify(value)
 
         if noquote:
             return value
