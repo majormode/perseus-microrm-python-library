@@ -716,7 +716,6 @@ class RdbmsConnection(object):
             raise ValueError(f'The placeholder {placeholder_name} has no corresponding parameter')
 
         if not allow_missing_placeholders:
-            print('ALLOW_MISSING_PLACEHOLDERS', allow_missing_placeholders)
             # Check whether all the specified parameters have their corresponding
             # placeholder in the SQL statement.
             undefined_placeholders = [
