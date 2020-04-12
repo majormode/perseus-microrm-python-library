@@ -499,7 +499,11 @@ class RdbmsConnection(object):
     def commit(self):
         self.__connection.commit()
 
-    def execute(self, sql_statement, parameters=None):
+    def execute(
+            self,
+            sql_statement,
+            parameters=None,
+            allow_missing_placeholder=False):
         """
         Execute the specified Structured Query Language (SQL) parameterized
         statement.
@@ -564,6 +568,12 @@ class RdbmsConnection(object):
                                 [ uuid.uuid1(), (False, 'ST_SetSRID(ST_MakePoint(160.1, 10.6), 4326)') ] ] }
 
         :param parameters: a dictionary of parameters.
+
+        :param allow_missing_placeholder: Indicate whether some placeholders
+            can be defined but not declared in the SQL query.  This may happen
+            when a SQL query is programmatically generated depending on
+            conditions while the placeholders for all the conditions are
+            passed to the function.
 
 
         :return: a cursor object representing a database cursor, which is used
