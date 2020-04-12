@@ -503,7 +503,7 @@ class RdbmsConnection(object):
             self,
             sql_statement,
             parameters=None,
-            allow_missing_placeholder=False):
+            allow_missing_placeholders=False):
         """
         Execute the specified Structured Query Language (SQL) parameterized
         statement.
@@ -569,7 +569,7 @@ class RdbmsConnection(object):
 
         :param parameters: a dictionary of parameters.
 
-        :param allow_missing_placeholder: Indicate whether some placeholders
+        :param allow_missing_placeholders: Indicate whether some placeholders
             can be defined but not declared in the SQL query.  This may happen
             when a SQL query is programmatically generated depending on
             conditions while the placeholders for all the conditions are
@@ -597,7 +597,7 @@ class RdbmsConnection(object):
             sql_statement = RdbmsConnection.__prepare_statement(
                 sql_statement,
                 parameters,
-                allow_missing_placeholder=allow_missing_placeholder)
+                allow_missing_placeholders=allow_missing_placeholders)
 
         # Compact the SQL statement expression removing useless space and
         # newline characters, and stripping all SQL comments.
@@ -665,7 +665,7 @@ class RdbmsConnection(object):
         return sql_value
 
     @staticmethod
-    def __get_placeholders(sql_statement, parameters, allow_missing_placeholder=False):
+    def __get_placeholders(sql_statement, parameters, allow_missing_placeholders=False):
         """
         Retrieve the list of placeholders and their type defined in an SQL
         statement.
@@ -675,7 +675,7 @@ class RdbmsConnection(object):
 
         :param parameters: the list of parameters used in the SQL statement.
 
-        :param allow_missing_placeholder: Indicate whether some placeholders
+        :param allow_missing_placeholders: Indicate whether some placeholders
             can be defined but not declared in the SQL query.  This may happen
             when a SQL query is programmatically generated depending on
             conditions while the placeholders for all the conditions are
@@ -715,7 +715,8 @@ class RdbmsConnection(object):
         except KeyError:
             raise ValueError(f'The placeholder {placeholder_name} has no corresponding parameter')
 
-        if not allow_missing_placeholder:
+        if not allow_missing_placeholders:
+            print('ALLOW_MISSING_PLACEHOLDERS', allow_missing_placeholders)
             # Check whether all the specified parameters have their corresponding
             # placeholder in the SQL statement.
             undefined_placeholders = [
@@ -731,7 +732,7 @@ class RdbmsConnection(object):
         return placeholders
 
     @staticmethod
-    def __prepare_statement(sql_statement, parameters, allow_missing_placeholder=False):
+    def __prepare_statement(sql_statement, parameters, allow_missing_placeholders=False):
         """
         Prepare the specified SQL statement, replacing the placeholders by the
         value of the given parameters
@@ -743,7 +744,7 @@ class RdbmsConnection(object):
             parameter to replace in each placeholder of this parameter in the
             SQL statement.
 
-        :param allow_missing_placeholder: Indicate whether some placeholders
+        :param allow_missing_placeholders: Indicate whether some placeholders
             can be defined but not declared in the SQL query.  This may happen
             when a SQL query is programmatically generated depending on
             conditions while the placeholders for all the conditions are
@@ -757,7 +758,7 @@ class RdbmsConnection(object):
         placeholders = RdbmsConnection.__get_placeholders(
             sql_statement,
             parameters,
-            allow_missing_placeholder=allow_missing_placeholder)
+            allow_missing_placeholders=allow_missing_placeholders)
 
         for (variable_name, (variable_type, variable_value)) in placeholders.items():
             # Only expand parameters whose value corresponds to a list.
