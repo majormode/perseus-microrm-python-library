@@ -594,7 +594,10 @@ class RdbmsConnection(object):
             # Replace the placeholders in the SQL statement for which the database
             # adapter cannot adapt the Python value to SQL types, for instance,
             # list and nested list.
-            sql_statement = RdbmsConnection._prepare_statement(sql_statement, parameters)
+            sql_statement = RdbmsConnection.__prepare_statement(
+                sql_statement,
+                parameters,
+                allow_missing_placeholder=allow_missing_placeholder)
 
         # Compact the SQL statement expression removing useless space and
         # newline characters, and stripping all SQL comments.
@@ -625,7 +628,7 @@ class RdbmsConnection(object):
         self.__connection.rollback()
 
     @staticmethod
-    def _expand_placeholder_value(value):
+    def __expand_placeholder_value(value):
         """
         Return the SQL string representation of the specified placeholder's
         value.
@@ -662,7 +665,7 @@ class RdbmsConnection(object):
         return sql_value
 
     @staticmethod
-    def _get_placeholders(sql_statement, parameters):
+    def __get_placeholders(sql_statement, parameters, allow_missing_placeholder=False):
         """
         Retrieve the list of placeholders and their type defined in an SQL
         statement.
@@ -671,6 +674,12 @@ class RdbmsConnection(object):
         :param sql_statement: a parameterized statement.
 
         :param parameters: the list of parameters used in the SQL statement.
+
+        :param allow_missing_placeholder: Indicate whether some placeholders
+            can be defined but not declared in the SQL query.  This may happen
+            when a SQL query is programmatically generated depending on
+            conditions while the placeholders for all the conditions are
+            passed to the function.
 
 
         :return: a dictionary of placeholders where the key represents the
@@ -706,22 +715,23 @@ class RdbmsConnection(object):
         except KeyError:
             raise ValueError(f'The placeholder {placeholder_name} has no corresponding parameter')
 
-        # Check whether all the specified parameters have their corresponding
-        # placeholder in the SQL statement.
-        undefined_placeholders = [
-            parameter
-            for parameter in parameters
-            if parameter not in placeholders]
+        if not allow_missing_placeholder:
+            # Check whether all the specified parameters have their corresponding
+            # placeholder in the SQL statement.
+            undefined_placeholders = [
+                parameter
+                for parameter in parameters
+                if parameter not in placeholders]
 
-        if undefined_placeholders:
-            raise ValueError(
-                'The placeholders %s are missing from the extended pyformat SQL statement\n%s' %
-                (', '.join(['"%s"' % _ for _ in undefined_placeholders]), sql_statement))
+            if undefined_placeholders:
+                raise ValueError(
+                    'The placeholders %s are missing from the extended pyformat SQL statement\n%s' %
+                    (', '.join(['"%s"' % _ for _ in undefined_placeholders]), sql_statement))
 
         return placeholders
 
     @staticmethod
-    def _prepare_statement(sql_statement, parameters):
+    def __prepare_statement(sql_statement, parameters, allow_missing_placeholder=False):
         """
         Prepare the specified SQL statement, replacing the placeholders by the
         value of the given parameters
@@ -733,12 +743,21 @@ class RdbmsConnection(object):
             parameter to replace in each placeholder of this parameter in the
             SQL statement.
 
+        :param allow_missing_placeholder: Indicate whether some placeholders
+            can be defined but not declared in the SQL query.  This may happen
+            when a SQL query is programmatically generated depending on
+            conditions while the placeholders for all the conditions are
+            passed to the function.
+
 
         :return: a string representation of the SQL statement where the
-            placehodlers have been replaced by the value of the corresponding
+            placeholders have been replaced by the value of the corresponding
             variables, depending on the type of these variables.
         """
-        placeholders = RdbmsConnection._get_placeholders(sql_statement, parameters)
+        placeholders = RdbmsConnection.__get_placeholders(
+            sql_statement,
+            parameters,
+            allow_missing_placeholder=allow_missing_placeholder)
 
         for (variable_name, (variable_type, variable_value)) in placeholders.items():
             # Only expand parameters whose value corresponds to a list.
@@ -779,9 +798,9 @@ class RdbmsConnection(object):
         """
         variable_name, variable_type, variable_value = variable
 
-        sql_value = RdbmsConnection._expand_placeholder_value(variable_value) \
+        sql_value = RdbmsConnection.__expand_placeholder_value(variable_value) \
             if variable_type == PlaceholderType.simple_list \
-            else ','.join(['(%s)' % RdbmsConnection._expand_placeholder_value(v) for v in variable_value])
+            else ','.join(['(%s)' % RdbmsConnection.__expand_placeholder_value(v) for v in variable_value])
 
         return re.sub(PATTERN_SQL_PLACEHOLDER_EXPRESSIONS[variable_type] % variable_name, sql_value, sql_statement)
 
