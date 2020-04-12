@@ -31,7 +31,7 @@ __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.2.0'
+__version__ = '1.2.1'
 
 
 # Base directory where this file is located.
