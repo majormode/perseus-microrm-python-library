@@ -41,20 +41,16 @@ REGEX_SQL_COMMENT = re.compile(r'(--[^\n]*[\n])|(/\*([^/]|([^*]/))*\*/)|(/\*\*/)
 # Regular expression that matches a placeholder, also known as a named
 # variable, within a parameterized SQL statement, such as:
 #
-# * `%(foo)s`: element or list of elements
+# * `%(foo)s`: Element or list of elements.  For instance:
 #
 #       SELECT * FROM foo WHERE a = %(a)s
 #
 #       SELECT * FROM foo WHERE a IN (%(a)s)
 #
-# * `%[foo]s`: nested list of elements
+# * `%[foo]s`: Nested list of elements.  For instance:
 #
 #       SELECT * FROM (VALUES %[a]s) AS foo(a, b)
 #
-
-# PATTERN_SQL_PLACEHOLDER_SIMPLE_LIST =
-# PATTERN_SQL_PLACEHOLDER_NESTED_LIST =
-
 PlaceholderType = Enum(
     'simple_list',
     'nested_list'
@@ -440,7 +436,7 @@ class RdbmsConnection(object):
         the most appropriate for the service requesting this connection.
 
 
-        :param settings: a dictionary of connection properties::
+        :param settings: A dictionary of connection properties::
 
                    {
                      None: {
@@ -474,7 +470,7 @@ class RdbmsConnection(object):
             Python clause `with ...:`.
 
 
-        @raise DefaultConnectionPropertiesSettingException: if the specified
+        :raise DefaultConnectionPropertiesSettingException: if the specified
             tag is not defined in the dictionary of connection properties,
             and when no default connection properties is defined either (tag `None`).
         """
@@ -699,21 +695,21 @@ class RdbmsConnection(object):
 
         try:
             for match in REGEX_PATTERN_SQL_PLACEHOLDERS.findall(sql_statement):
-                for (i, placeholder_type) in enumerate(PlaceholderType):
+                for i, placeholder_type in enumerate(PlaceholderType):
                     placeholder_name = match[i]
                     if placeholder_name:
                         placeholder_value = parameters[placeholder_name]
 
+                        # Check that the value of the corresponding parameter is a list.
                         if placeholder_type == PlaceholderType.nested_list \
                             and (isinstance(placeholder_value, tuple) and len(placeholder_value) == 1) \
                             and not isinstance(placeholder_value, (list, set, tuple)):
-                            raise ValueError(f'The value to replace the placeholder "{placeholder_name}" is not a list as expected')
+                            raise ValueError(f"The value of the placeholder '{placeholder_name}' must be a list")
 
                         placeholders[placeholder_name] = (placeholder_type, placeholder_value)
                         break
-
         except KeyError:
-            raise ValueError(f'The placeholder {placeholder_name} has no corresponding parameter')
+            raise ValueError(f'The placeholder {placeholder_name} is not defined as a parameter')
 
         if not allow_missing_placeholders:
             # Check whether all the specified parameters have their corresponding
