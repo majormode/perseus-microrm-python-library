@@ -19,6 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import io
 import os
 
 import pipfile
@@ -46,7 +47,7 @@ def get_requirements():
 
 
 def read_file(file_path_name):
-    with open(file_path_name, mode='rt', encoding='utf-8') as fd:
+    with io.open(file_path_name, mode='rt', encoding='utf-8') as fd:
         return fd.read()
 
 
