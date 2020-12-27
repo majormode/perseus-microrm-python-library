@@ -644,7 +644,7 @@ class RdbmsConnection(object):
         """
         if isinstance(value, (list, set)) or (isinstance(value, tuple) and len(value) != 1):
             sql_value = ','.join([
-                RdbmsConnection._to_sql_value(
+                RdbmsConnection.to_sql_value(
                     element if not isinstance(element, tuple) else element[0],
                     noquote=isinstance(element, tuple))
                 for element in value])
@@ -653,10 +653,10 @@ class RdbmsConnection(object):
             assert len(value) == 1
             value = value[0]
             assert value is None or isinstance(value, str), f'String expected instead of {type(value)}'
-            sql_value = RdbmsConnection._to_sql_value(value, True)
+            sql_value = RdbmsConnection.to_sql_value(value, True)
 
         else:
-            sql_value = RdbmsConnection._to_sql_value(value)
+            sql_value = RdbmsConnection.to_sql_value(value)
 
         return sql_value
 
@@ -801,7 +801,7 @@ class RdbmsConnection(object):
         return re.sub(PATTERN_SQL_PLACEHOLDER_EXPRESSIONS[variable_type] % variable_name, sql_value, sql_statement)
 
     @staticmethod
-    def _to_sql_value(value, noquote=False):
+    def to_sql_value(value, noquote=False):
         """
         Return the SQL string representation of the specified value.
 
