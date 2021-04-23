@@ -334,10 +334,15 @@ class RdbmsConnection(object):
 
             return RdbmsConnection.RdbmsObject.decode(value, cast_operator=cast_operator)
 
-    def __init__(self, hostname, port, database_name,
-                 account_username, account_password,
-                 logger_name=None,
-                 auto_commit=False):
+    def __init__(
+            self,
+            hostname,
+            port,
+            database_name,
+            account_username,
+            account_password,
+            auto_commit=False,
+            logger_name=None):
         """
         Build a `RdbmsConnection` instance providing properties of
         connection to Relational DataBase Management System (RDBMS).
@@ -430,7 +435,12 @@ class RdbmsConnection(object):
         return False  # Propagate the exception, if any.
 
     @staticmethod
-    def acquire_connection(settings, tag=None, logger_name=None, auto_commit=False):
+    def acquire_connection(
+            settings,
+            auto_commit=False,
+            connection=None,
+            logger_name=None,
+            tag=None):
         """
         Return a connection to a Relational DataBase Management System (RDBMS)
         the most appropriate for the service requesting this connection.
@@ -466,7 +476,7 @@ class RdbmsConnection(object):
             committed at the end of the session.
 
 
-        :return: a `RdbmsConnection` instance to be used supporting the
+        :return: An object `RdbmsConnection` instance to be used supporting the
             Python clause `with ...:`.
 
 
@@ -474,19 +484,26 @@ class RdbmsConnection(object):
             tag is not defined in the dictionary of connection properties,
             and when no default connection properties is defined either (tag `None`).
         """
-        try:
-            connection_properties = settings.get(tag, settings[None])
-        except KeyError:
-            raise RdbmsConnection.DefaultConnectionPropertiesSettingException()
+        if connection:
+            if auto_commit and not connection.auto_commit:
+                raise ValueError('The specified connection object has not auto commit has required')
 
-        return RdbmsConnection(
+        else:
+            try:
+                connection_properties = settings.get(tag, settings[None])
+            except KeyError:
+                raise RdbmsConnection.DefaultConnectionPropertiesSettingException()
+
+            connection = RdbmsConnection(
                 connection_properties['rdbms_hostname'],
                 connection_properties['rdbms_port'],
                 connection_properties['rdbms_database_name'],
                 connection_properties['rdbms_account_username'],
                 connection_properties['rdbms_account_password'],
-                logger_name=logger_name,
-                auto_commit=auto_commit)
+                auto_commit=auto_commit,
+                logger_name=logger_name)
+
+        return connection
 
     @property
     def auto_commit(self):
