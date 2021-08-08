@@ -31,7 +31,7 @@ from majormode.perseus.model import obj
 from majormode.perseus.model.obj import Serializable
 from majormode.perseus.utils import cast
 
-from majormode.perseus.model.connection import DatabaseConnectionProperties
+from majormode.perseus.model.microrm import DatabaseConnectionProperties
 
 
 # Regular expression that matches any valid SQL comments such as:
