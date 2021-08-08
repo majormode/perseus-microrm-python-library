@@ -22,7 +22,7 @@
 from majormode.perseus.model.connection import ConnectionProperties
 
 
-class DatabaseConnectionProperties(ConnectionProperties):
+class RdbmsConnectionProperties(ConnectionProperties):
     def __init__(
             self,
             hostname: str,

@@ -31,7 +31,7 @@ from majormode.perseus.model import obj
 from majormode.perseus.model.obj import Serializable
 from majormode.perseus.utils import cast
 
-from majormode.perseus.model.microrm import DatabaseConnectionProperties
+from majormode.perseus.model.microrm import RdbmsConnectionProperties
 
 
 # Regular expression that matches any valid SQL comments such as:
@@ -332,7 +332,7 @@ class RdbmsConnection(object):
 
     def __init__(
             self,
-            connection_properties: DatabaseConnectionProperties,
+            connection_properties: RdbmsConnectionProperties,
             auto_commit=False,
             logger_name=None):
         """
@@ -416,7 +416,7 @@ class RdbmsConnection(object):
 
     @staticmethod
     def acquire_connection(
-            connection_properties: DatabaseConnectionProperties,
+            connection_properties: RdbmsConnectionProperties,
             auto_commit: bool = False,
             connection: RdbmsConnection = None,
             logger_name: str = None) -> RdbmsConnection:
