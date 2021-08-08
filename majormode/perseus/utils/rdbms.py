@@ -19,6 +19,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+from __future__ import annotations
+
 import datetime
 import logging
 import psycopg2
@@ -28,6 +30,8 @@ from majormode.perseus.model.enum import Enum
 from majormode.perseus.model import obj
 from majormode.perseus.model.obj import Serializable
 from majormode.perseus.utils import cast
+
+from majormode.perseus.model.connection import DatabaseConnectionProperties
 
 
 # Regular expression that matches any valid SQL comments such as:
@@ -163,15 +167,7 @@ class RdbmsConnection(object):
                            (3, 'bar3', ST_SetSRID(ST_MakePoint(160.1, 10.6), 4326))) AS foo(a, b, c)
 
     """
-    class DefaultConnectionPropertiesSettingException(Exception):
-        """
-        Signal that the settings of the connection properties to the default
-        Relational DataBase Management System (Rdbms) have not been defined
-        properly into the Python settings file.
-        """
-        pass
-
-    class RdbmsCursor(object):
+    class RdbmsCursor:
         """
         Represent a database cursor, which is used to manage the context of a
         fetch operation.  The native Python database cursor is embedded in
@@ -336,11 +332,7 @@ class RdbmsConnection(object):
 
     def __init__(
             self,
-            hostname,
-            port,
-            database_name,
-            account_username,
-            account_password,
+            connection_properties: DatabaseConnectionProperties,
             auto_commit=False,
             logger_name=None):
         """
@@ -348,27 +340,15 @@ class RdbmsConnection(object):
         connection to Relational DataBase Management System (RDBMS).
 
 
-        :param hostname: hostname of the RDBMS server to connect to.
-
-        :param port: port number the RDBMS server listens at.
-
-        :param database_name: name of the database to use.
-
-        :param account_username: username of the database account on whose
-            behalf the connection is being made to the RDBMS server.
-
-        :param account_password: password of the user account.
+        :param connection_properties: Properties to connect to the database
+            server.
 
         :param logger_name: name of the logger for debug information.
 
         :param auto_commit: indicate whether the transaction needs to be
             committed at the end of the session.
         """
-        self.hostname = hostname
-        self.port = port
-        self.database_name = database_name
-        self.account_username = account_username
-        self.account_password = account_password
+        self.__connection_properties = connection_properties
         self.__auto_commit = auto_commit
 
         self.__cursor = None
@@ -385,15 +365,15 @@ class RdbmsConnection(object):
         expression in a `with` statement.
 
 
-        :return: this `RdbmsConnection` object.
+        :return: This `RdbmsConnection` object.
         """
         if self._reference_count == 0:
             self.__connection = psycopg2.connect(
-                host=self.hostname,
-                port=self.port,
-                database=self.database_name,
-                user=self.account_username,
-                password=self.account_password)
+                host=self.__connection_properties.hostname,
+                port=self.__connection_properties.port_number,
+                database=self.__connection_properties.database_name,
+                user=self.__connection_properties.username,
+                password=self.__connection_properties.password)
 
         self._reference_count += 1
 
@@ -436,72 +416,35 @@ class RdbmsConnection(object):
 
     @staticmethod
     def acquire_connection(
-            settings,
-            auto_commit=False,
-            connection=None,
-            logger_name=None,
-            tag=None):
+            connection_properties: DatabaseConnectionProperties,
+            auto_commit: bool = False,
+            connection: RdbmsConnection = None,
+            logger_name: str = None) -> RdbmsConnection:
         """
         Return a connection to a Relational DataBase Management System (RDBMS)
         the most appropriate for the service requesting this connection.
 
 
-        :param settings: A dictionary of connection properties::
+        :param connection_properties: The properties to connect to the
+            database server.
 
-                   {
-                     None: {
-                       'rdbms_hostname': "...",
-                       'rdbms_port': ...,
-                       'rdbms_database_name': "...",
-                       'rdbms_account_username': '...'
-                       'rdbms_account_password': '...'
-                     },
-                     'tag': {
-                       'rdbms_hostname': "...",
-                       'rdbms_port': ...,
-                       'rdbms_database_name': "...",
-                       'rdbms_account_username': '...'
-                       'rdbms_account_password': '...'
-                     },
-                     ...
-                   }
-               The key `None` is the default tag.
+        :param auto_commit: Indicate whether the transaction needs to be
+            committed at the end of the session.
 
-        :param tag: a tag that specifies which particular connection properties
-            has to be used.
+        :param connection: An object `RdbmsConnection`.
 
         :param logger_name: name of the logger for debug information.
 
-        :param auto_commit: indicate whether the transaction needs to be
-            committed at the end of the session.
 
-
-        :return: An object `RdbmsConnection` instance to be used supporting the
-            Python clause `with ...:`.
-
-
-        :raise DefaultConnectionPropertiesSettingException: if the specified
-            tag is not defined in the dictionary of connection properties,
-            and when no default connection properties is defined either (tag `None`).
+        :return: An object `RdbmsConnection`.
         """
-        if connection:
-            if auto_commit and not connection.auto_commit:
-                raise ValueError('The specified connection object has not auto commit has required')
-
-        else:
-            try:
-                connection_properties = settings.get(tag, settings[None])
-            except KeyError:
-                raise RdbmsConnection.DefaultConnectionPropertiesSettingException()
-
+        if not connection:
             connection = RdbmsConnection(
-                connection_properties['rdbms_hostname'],
-                connection_properties['rdbms_port'],
-                connection_properties['rdbms_database_name'],
-                connection_properties['rdbms_account_username'],
-                connection_properties['rdbms_account_password'],
+                connection_properties,
                 auto_commit=auto_commit,
                 logger_name=logger_name)
+        elif auto_commit and not connection.auto_commit:
+            raise ValueError("The connection object has not auto commit set as required")
 
         return connection
 
