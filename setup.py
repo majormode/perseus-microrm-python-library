@@ -32,7 +32,7 @@ __email__ = "daniel.caune@gmail.com"
 __license__ = "MIT"
 __maintainer__ = "Daniel CAUNE"
 __status__ = "Production"
-__version__ = '1.2.8'
+__version__ = '1.3.0'
 
 
 # Base directory where this file is located.
@@ -71,10 +71,10 @@ setuptools.setup(
     platforms=['any'],
     python_requires='>=3',
     project_urls={
-        'Bug Tracker': 'https://github.com/dcaune/perseus-microrm-python-library/issues',
-        'Documentation': 'https://github.com/dcaune/perseus-microrm-python-library',
-        'Source Code': 'https://github.com/dcaune/perseus-microrm-python-library',
+        'Bug Tracker': 'https://github.com/majormode/perseus-microrm-python-library/issues',
+        'Documentation': 'https://github.com/majormode/perseus-microrm-python-library',
+        'Source Code': 'https://github.com/majormode/perseus-microrm-python-library',
     },
     version=__version__,
-    url='https://github.com/dcaune/perseus-microrm-python-library',
+    url='https://github.com/majormode/perseus-microrm-python-library',
 )
