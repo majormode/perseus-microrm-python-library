@@ -26,11 +26,11 @@ class RdbmsConnectionProperties(ConnectionProperties):
     def __init__(
             self,
             hostname: str,
-            port_number: int,
+            port: int,
             username: str,
             password: str,
             database_name: str):
-        super().__init__(hostname, port_number, username, password)
+        super().__init__(hostname, port, username, password)
         self.__database_name = database_name
 
     @property
