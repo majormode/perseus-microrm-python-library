@@ -26,12 +26,12 @@ import logging
 import psycopg2
 import re
 
-from majormode.perseus.model.enum import Enum
-from majormode.perseus.model import obj
-from majormode.perseus.model.obj import Serializable
-from majormode.perseus.utils import cast
+from src.majormode import Enum
+from src.majormode.perseus.model import obj
+from src.majormode import Serializable
+from src.majormode.perseus.utils import cast
 
-from majormode.perseus.model.microrm import RdbmsConnectionProperties
+from src.majormode.perseus.model.microrm import RdbmsConnectionProperties
 
 
 # Regular expression that matches any valid SQL comments such as:

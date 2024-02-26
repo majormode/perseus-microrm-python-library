@@ -10,7 +10,7 @@ classifiers = [
 description = "Python small, little, mini, tiny, micro Object-Relational Mapping (ORM)"
 keywords = ["micro", "orm", "libray", "postgresql", "rdbms"]
 license = "SEE LICENSE IN <LICENSE.md>"
-name = "xebus-agent-family-csv-import"
+name = "perseus-microrm-library"
 packages = [{ include = "majormode", from = "src" }]
 readme = "README.md"
 repository = "https://github.com/majormode/perseus-microrm-python-library"
