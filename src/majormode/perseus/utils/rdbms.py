@@ -26,12 +26,12 @@ import logging
 import psycopg2
 import re
 
-from majormode import Enum
 from majormode.perseus.model import obj
-from majormode import Serializable
-from majormode.perseus.utils import cast
+from majormode.perseus.model.enum import Enum
+from majormode.perseus.model.obj import Serializable
 
 from majormode.perseus.model.microrm import RdbmsConnectionProperties
+from majormode.perseus.utils import cast
 
 
 # Regular expression that matches any valid SQL comments such as:
@@ -184,7 +184,8 @@ class RdbmsConnection(object):
             self.__column_index_dict = {} if cursor.description is None else \
                 dict([
                     (cursor.description[column_index][0], column_index)
-                    for column_index in range(len(cursor.description))])
+                    for column_index in range(len(cursor.description))
+                ])
 
         def fetch_one(self):
             """
@@ -206,8 +207,10 @@ class RdbmsConnection(object):
 
             :return: a list of `RdbmsRow` instance.
             """
-            return [RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
-                    for row in self.__native_cursor.fetchall()]
+            return [
+                RdbmsConnection.RdbmsRow(self.__column_index_dict, row)
+                for row in self.__native_cursor.fetchall()
+            ]
 
         def get_row_count(self):
             """
@@ -254,7 +257,8 @@ class RdbmsConnection(object):
                 (column_name,
                  RdbmsConnection.RdbmsObject.decode(
                      row[column_index],
-                     cast_operators and cast_operators.get(column_name)))
+                     cast_operators and cast_operators.get(column_name))
+                 )
                 for column_name, column_index in column_index_dict.items()])
 
         @staticmethod
@@ -334,7 +338,8 @@ class RdbmsConnection(object):
             self,
             connection_properties: RdbmsConnectionProperties,
             auto_commit=False,
-            logger_name=None):
+            logger_name=None
+    ):
         """
         Build a `RdbmsConnection` instance providing properties of
         connection to Relational DataBase Management System (RDBMS).
@@ -373,7 +378,8 @@ class RdbmsConnection(object):
                 port=self.__connection_properties.port_number,
                 database=self.__connection_properties.database_name,
                 user=self.__connection_properties.username,
-                password=self.__connection_properties.password)
+                password=self.__connection_properties.password
+            )
 
         self._reference_count += 1
 
@@ -419,7 +425,8 @@ class RdbmsConnection(object):
             connection_properties: RdbmsConnectionProperties,
             auto_commit: bool = False,
             connection: RdbmsConnection = None,
-            logger_name: str = None) -> RdbmsConnection:
+            logger_name: str = None
+    ) -> RdbmsConnection:
         """
         Return a connection to a Relational DataBase Management System (RDBMS)
         the most appropriate for the service requesting this connection.
@@ -459,7 +466,8 @@ class RdbmsConnection(object):
             self,
             sql_statement,
             parameters=None,
-            allow_missing_placeholders=False):
+            allow_missing_placeholders: bool = False
+    ):
         """
         Execute the specified Structured Query Language (SQL) parameterized
         statement.
@@ -553,16 +561,19 @@ class RdbmsConnection(object):
             sql_statement = RdbmsConnection.__prepare_statement(
                 sql_statement,
                 parameters,
-                allow_missing_placeholders=allow_missing_placeholders)
+                allow_missing_placeholders=allow_missing_placeholders
+            )
 
         # Compact the SQL statement expression removing useless space and
         # newline characters, and stripping all SQL comments.
-        sql_statement = ' '.join(
-            [line
-             for line in [
+        sql_statement = ' '.join([
+            line
+            for line in [
                 line.strip()
-                for line in REGEX_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines()]
-             if len(line) > 0])
+                for line in REGEX_SQL_COMMENT.sub('\n', sql_statement.strip()).splitlines()
+            ]
+            if len(line) > 0
+        ])
 
         self.logger.debug(f'Executing SQL statement:\n{sql_statement}\n\twith: {parameters}')
 
@@ -607,7 +618,8 @@ class RdbmsConnection(object):
                 RdbmsConnection.to_sql_value(
                     element if not isinstance(element, tuple) else element[0],
                     noquote=isinstance(element, tuple))
-                for element in value])
+                for element in value
+            ])
 
         elif isinstance(value, tuple):
             assert len(value) == 1
@@ -677,7 +689,8 @@ class RdbmsConnection(object):
             undefined_placeholders = [
                 parameter
                 for parameter in parameters
-                if parameter not in placeholders]
+                if parameter not in placeholders
+            ]
 
             if undefined_placeholders:
                 raise ValueError(
@@ -720,7 +733,8 @@ class RdbmsConnection(object):
             if isinstance(variable_value, (list, set, tuple)):
                 sql_statement = RdbmsConnection._replace_placeholder(
                     sql_statement,
-                    (variable_name, variable_type, variable_value))
+                    (variable_name, variable_type, variable_value)
+                )
 
                 # Remove this parameter as it has been expended in the SQL expression.
                 del parameters[variable_name]
@@ -749,8 +763,8 @@ class RdbmsConnection(object):
 
 
         :return: a string expression of the SQL statement where the
-            paceholders of the specified variable have been replace by the
-            value of this variable, depending on the type of this varialble.
+            placeholders of the specified variable have been replaced by the
+            value of this variable, depending on the type of this variable.
         """
         variable_name, variable_type, variable_value = variable
 

@@ -19,7 +19,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from majormode import ConnectionProperties
+from majormode.perseus.model.connection import ConnectionProperties
 
 
 class RdbmsConnectionProperties(ConnectionProperties):
@@ -29,7 +29,8 @@ class RdbmsConnectionProperties(ConnectionProperties):
             port: int,
             username: str,
             password: str,
-            database_name: str):
+            database_name: str
+    ):
         super().__init__(hostname, port, username, password)
         self.__database_name = database_name
 
